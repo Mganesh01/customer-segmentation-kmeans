@@ -8,7 +8,7 @@ VIP High Spenders
 Frequent Buyers
 
 Occasional Shoppers
-
+.
 Low Value Customers
 
 This segmentation helps businesses design targeted marketing strategies and improve customer retention.
