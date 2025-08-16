@@ -1,67 +1,49 @@
-# customer-segmentation-kmeans
-Customer Segmentation using K-Means on Online Retail Dataset
+import pandas as pd
+from sklearn.cluster import KMeans
+import matplotlib.pyplot as plt
+from datetime import datetime
 
-📌 Project Overview
+# 1. Load dataset
+df = pd.read_csv("D:\kaggle dataset\online_retail.csv",header=0)
 
-This project applies clustering techniques (K-Means) to perform customer segmentation on a retail dataset.
-By analyzing customer purchasing behavior using RFM (Recency, Frequency, Monetary) metrics, we can identify distinct groups of customers such as:
+# 2. Remove null CustomerID
+df.dropna(subset=['CustomerID'], inplace=True)
 
-VIP High Spenders
+# 3. Convert InvoiceDate to datetime
+df['InvoiceDate'] = pd.to_datetime(df['InvoiceDate'], dayfirst=True, errors='coerce')
 
-Frequent Buyers
+# 4. Calculate Recency, Frequency, Monetary
+# Reference date is one day after the last purchase in dataset
+reference_date = df['InvoiceDate'].max() + pd.Timedelta(days=1)
 
-Occasional Shoppers
+rfm = df.groupby('CustomerID').agg({
+    'InvoiceDate': lambda x: (reference_date - x.max()).days,  # Recency
+    'InvoiceNo': 'nunique',  # Frequency
+    'UnitPrice': 'sum'       # Monetary (simple version)
+})
 
-Low Value Customers
+rfm.columns = ['Recency', 'Frequency', 'Monetary']
 
-==>>This segmentation helps businesses design targeted marketing strategies and improve customer retention.
+# 5. K-Means Clustering
+kmeans = KMeans(n_clusters=4, random_state=42)
+rfm['Cluster'] = kmeans.fit_predict(rfm)
 
-📂 Dataset
+# 6. Show cluster counts
+print(rfm.groupby('Cluster').mean())
 
-Source: Online Retail Dataset (Kaggle)
+# 7. Plot clusters
+plt.scatter(rfm['Recency'], rfm['Monetary'], c=rfm['Cluster'], cmap='viridis')
+plt.xlabel('Recency (days)')
+plt.ylabel('Monetary')
+plt.title('Customer Segmentation')
+plt.show()
 
-Description:
+plt.figure(figsize=(8,6))
+plt.scatter(rfm["Recency"], rfm["Monetary"], 
+            c=rfm["Cluster"], cmap="viridis", alpha=0.6, edgecolors='k')
 
-Transactions of a UK-based online retailer
-
-Features: InvoiceNo, StockCode, Description, Quantity, InvoiceDate, UnitPrice, CustomerID, Country
-
-⚙️ Steps Performed
-
-==>>Data Preprocessing
-
-1)Removed missing Customer IDs
-2)Converted InvoiceDate to datetime format
-3)Feature Engineering (RFM Analysis)
-4)Recency → Days since last purchase
-
-==>Frequency → Number of purchases
-.Monetary → Total spend by customer
-
-==>>Clustering (K-Means)
-Applied K-Means algorithm with 4 clusters
-Segmented customers based on RFM scores
-
-==>> Visualization
-Scatter plots of Recency vs Monetary
-Cluster distribution analysis
-
-=>>>📊 Results
-Identified 4 customer segments
-
-Example groups:
-
-Cluster 0 → VIP Customers (Frequent + High spenders)
-Cluster 1 → Occasional Buyers
-Cluster 2 → Rare Shoppers
-Cluster 3 → Low Value Customers
-
-=>>>🖥️ Tech Stack
-
-Python
-
-Pandas (Data Processing)
-
-Matplotlib / Seaborn (Visualization)
-
-Scikit-learn (K-Means Clustering)
+plt.xlabel("Recency (days)")
+plt.ylabel("Monetary Value")
+plt.title("Customer Segmentation (Recency vs Monetary)")
+plt.colorbar(label='Cluster')
+plt.show()
